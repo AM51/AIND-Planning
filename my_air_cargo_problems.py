@@ -10,6 +10,7 @@ from lp_utils import (
 from my_planning_graph import PlanningGraph
 
 from functools import lru_cache
+from lp_utils import FluentState
 
 
 class AirCargoProblem(Problem):
@@ -59,7 +60,21 @@ class AirCargoProblem(Problem):
 
             :return: list of Action objects
             """
+
             loads = []
+            for c in self.cargos:
+                for p in self.planes:
+                    for a in self.airports:
+                        precond_pos = [expr("At({}, {})".format(c, a)),
+                                       expr("At({}, {})".format(p, a))]
+                        precond_neg = []
+                        effect_add = [expr("In({}, {})".format(c, p))]
+                        effect_rem = [expr("At({}, {})".format(c, a))]
+                        load = Action(expr("Load({}, {}, {})".format(c, p, a)),
+                                     [precond_pos, precond_neg],
+                                     [effect_add, effect_rem])
+                        loads.append(load)
+
             # TODO create all load ground actions from the domain Load action
             return loads
 
@@ -69,6 +84,19 @@ class AirCargoProblem(Problem):
             :return: list of Action objects
             """
             unloads = []
+            for c in self.cargos:
+                for p in self.planes:
+                    for a in self.airports:
+                        precond_pos = [expr("At({}, {})".format(p, a)),
+                                       expr("In({}, {})".format(c, p))]
+                        precond_neg = []
+                        effect_add = [expr("At({}, {})".format(c, a))]
+                        effect_rem = [expr("In({}, {})".format(c, p))]
+                        unload = Action(expr("Unload({}, {}, {})".format(c, p, a)),
+                                     [precond_pos, precond_neg],
+                                     [effect_add, effect_rem])
+                        unloads.append(unload)
+
             # TODO create all Unload ground actions from the domain Unload action
             return unloads
 
@@ -105,6 +133,31 @@ class AirCargoProblem(Problem):
         """
         # TODO implement
         possible_actions = []
+        fs = decode_state(state, self.state_map)
+        pos_list = fs.pos
+        neg_list = fs.neg
+
+        for action in self.actions_list:
+            flg = True
+            for pos_action in action.precond_pos:
+                if(pos_action in pos_list and pos_action in neg_list):
+                    flg = False
+                    break
+
+                if (pos_action not in pos_list):
+                    flg = False
+                    break
+            for neg_action in action.precond_neg:
+                if (neg_action in pos_list and neg_action in neg_list):
+                    flg = False
+                    break
+                    
+                if(neg_action not in neg_list):
+                    flg = False
+                    break
+            if (flg):
+                possible_actions.append(action)
+
         return possible_actions
 
     def result(self, state: str, action: Action):
@@ -116,9 +169,21 @@ class AirCargoProblem(Problem):
         :param action: Action applied
         :return: resulting state after action
         """
+        plist = []
+        nlist = []
+        fs:FluentState = decode_state(state, self.state_map)
+        posf = fs.pos
+        negf = fs.neg
         # TODO implement
-        new_state = FluentState([], [])
-        return encode_state(new_state, self.state_map)
+        for pe in action.effect_add:
+            posf.append(pe)
+        for ne in action.effect_rem:
+            negf.append(ne)
+
+        nstate = FluentState(posf,negf)
+
+        return encode_state(nstate, self.state_map)
+
 
     def goal_test(self, state: str) -> bool:
         """ Test the state to see if goal is reached
