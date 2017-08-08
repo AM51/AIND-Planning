@@ -140,18 +140,10 @@ class AirCargoProblem(Problem):
         for action in self.actions_list:
             flg = True
             for pos_action in action.precond_pos:
-                if(pos_action in pos_list and pos_action in neg_list):
-                    flg = False
-                    break
-
                 if (pos_action not in pos_list):
                     flg = False
                     break
             for neg_action in action.precond_neg:
-                if (neg_action in pos_list and neg_action in neg_list):
-                    flg = False
-                    break
-                    
                 if(neg_action not in neg_list):
                     flg = False
                     break
@@ -176,8 +168,12 @@ class AirCargoProblem(Problem):
         negf = fs.neg
         # TODO implement
         for pe in action.effect_add:
+            if(pe in negf):
+                negf.remove(pe)
             posf.append(pe)
         for ne in action.effect_rem:
+            if(ne in posf):
+                posf.remove(ne)
             negf.append(ne)
 
         nstate = FluentState(posf,negf)
