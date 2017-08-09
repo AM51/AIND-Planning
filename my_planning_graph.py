@@ -329,6 +329,10 @@ class PlanningGraph():
                 if(node_s not in prev_st):
                     flg = False
             if(flg):
+                for cnt,lit in enumerate(prev_st):
+                    if(lit in req_st):
+                        lit.children.add(node)
+                        node.parents.add(lit)
                 self.a_levels[level].add(node)
 
 
@@ -356,6 +360,8 @@ class PlanningGraph():
         for cnt,node_a in enumerate(st):
             new_st = node_a.effect_s_nodes()
             for cnt1,node_s in enumerate(new_st):
+                node_s.parents.add(node_a)
+                node_a.children.add(node_s)
                 self.s_levels[level].add(node_s)
 
 
@@ -417,6 +423,17 @@ class PlanningGraph():
         :return: bool
         """
         # TODO test for Inconsistent Effects between nodes
+        a1_action:Action = node_a1.action
+        a2_action:Action = node_a2.action
+
+        for exp in a1_action.effect_add:
+            if(exp in a2_action.effect_rem):
+                return True
+
+        for exp in a1_action.effect_rem:
+            if(exp in a2_action.effect_add):
+                return True
+
         return False
 
     def interference_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
@@ -434,6 +451,31 @@ class PlanningGraph():
         :return: bool
         """
         # TODO test for Interference between nodes
+        a1_action: Action = node_a1.action
+        a2_action: Action = node_a2.action
+        a1_prec_pos = a1_action.precond_pos
+        a1_prec_neg = a1_action.precond_neg
+
+        a2_prec_pos = a2_action.precond_pos
+        a2_prec_neg = a2_action.precond_neg
+
+
+        for exp in a1_action.effect_add:
+            if(exp in a2_prec_neg):
+                return True
+
+        for exp in a1_action.effect_rem:
+            if(exp in a2_prec_pos):
+                return True
+
+        for exp in a2_action.effect_add:
+            if (exp in a1_prec_neg):
+                return True
+
+        for exp in a2_action.effect_rem:
+            if (exp in a1_prec_pos):
+                return True
+
         return False
 
     def competing_needs_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
