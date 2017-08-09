@@ -221,6 +221,7 @@ class PlanningGraph():
         self.all_actions = self.problem.actions_list + self.noop_actions(self.problem.state_map)
         self.s_levels = []
         self.a_levels = []
+        self.tot = 0
         self.create_graph()
 
     def noop_actions(self, literal_list):
@@ -292,6 +293,7 @@ class PlanningGraph():
             self.update_s_mutex(self.s_levels[level])
 
             if self.s_levels[level] == self.s_levels[level - 1]:
+                self.tot = level
                 leveled = True
 
     def add_action_level(self, level):
@@ -575,4 +577,12 @@ class PlanningGraph():
         level_sum = 0
         # TODO implement
         # for each goal in the problem, determine the level cost, then add them together
+
+        for goal in self.problem.goal:
+            node_s = PgNode_s(goal,True)
+            for i in range (0,self.tot+1):
+                if(node_s in self.s_levels[i]):
+                    level_sum = level_sum + i
+                    break
+
         return level_sum
